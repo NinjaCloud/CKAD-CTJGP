@@ -32,7 +32,7 @@ kubectl get pod
 kubectl exec -it sidecar-pod -c sidecar-container -- sh
 ```
 ``` 
-curl 'http://localhost:80/'
+kubectl logs sidecar-pod -c sidecar-container
 ```
 
 
