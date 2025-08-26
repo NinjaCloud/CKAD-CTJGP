@@ -24,6 +24,21 @@ kubectl create sa -n ns1 sa1
 ```
 kubectl get ns
 ```
+### Create Secret for your Service Account 
+```
+vi secretSA.yaml
+```
+
+```
+apiVersion: v1
+kind: Secret
+metadata:
+  namespace: ns1
+  name: my-service-account-token
+  annotations:
+     kubernetes.io/service-account.name: sa1 # Link to your ServiceAccount
+type: kubernetes.io/service-account-token
+```
 
 #### Create a new Role and RoleBinding 
 ```
