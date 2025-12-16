@@ -123,94 +123,67 @@ vi kubeadm-setup.sh
 ```
 ```
 #!/bin/bash
-#
-# Common setup for all servers (Control Plane and Nodes)
+set -e
 
-set -euxo pipefail
+K8S_VERSION="1.30"
 
-# Kuernetes Variable Declaration
+echo "[Step 1] Update system and install dependencies"
+sudo apt-get update
+sudo apt-get install -y apt-transport-https ca-certificates curl gpg software-properties-common
 
-KUBERNETES_VERSION=v1.32
-CRIO_VERSION=v1.32
-
-# disable swap
+echo "[Step 2] Disable swap"
 sudo swapoff -a
+sudo sed -i '/ swap / s/^/#/' /etc/fstab
 
-# keeps the swaf off during reboot
-(crontab -l 2>/dev/null; echo "@reboot /sbin/swapoff -a") | crontab - || true
-sudo apt-get update -y
-
-
-# Install CRI-O Runtime
-
-
-# Create the .conf file to load the modules at bootup
+echo "[Step 3] Load kernel modules and configure sysctl"
 cat <<EOF | sudo tee /etc/modules-load.d/k8s.conf
 overlay
 br_netfilter
 EOF
-
 sudo modprobe overlay
 sudo modprobe br_netfilter
 
-# sysctl params required by setup, params persist across reboots
-cat <<EOF | sudo tee /etc/sysctl.d/k8s.conf
-net.bridge.bridge-nf-call-iptables  = 1
+cat <<EOF | sudo tee /etc/sysctl.d/99-kubernetes-cri.conf
+net.bridge.bridge-nf-call-iptables = 1
+net.ipv4.ip_forward = 1
 net.bridge.bridge-nf-call-ip6tables = 1
-net.ipv4.ip_forward                 = 1
 EOF
-
-# Apply sysctl params without reboot
 sudo sysctl --system
 
-sudo apt update
-sudo apt install -y apt-transport-https ca-certificates curl gnupg2 software-properties-common
+echo "[Step 4] Install containerd runtime"
+sudo apt-get install -y containerd
 
-export OS_VERSION=xUbuntu_22.04
-export CRIO_VERSION=1.32
+# Configure containerd with systemd cgroup driver
+sudo mkdir -p /etc/containerd
+containerd config default | sudo tee /etc/containerd/config.toml
+sudo sed -i 's/SystemdCgroup = false/SystemdCgroup = true/' /etc/containerd/config.toml
 
-sudo curl curl -fsSL https://pkgs.k8s.io/core:/stable:/$KUBERNETES_VERSION/deb/Release.key |
-    gpg --dearmor -o /etc/apt/keyrings/kubernetes-apt-keyring.gpg
+sudo systemctl restart containerd
+sudo systemctl enable containerd
 
-sudo curl -fsSL https://download.opensuse.org/repositories/isv:/cri-o:/stable:/$CRIO_VERSION/deb/Release.key |
-    gpg --dearmor -o /etc/apt/keyrings/cri-o-apt-keyring.gpg
+echo "[Step 5] Install kubeadm, kubelet, kubectl from pkgs.k8s.io"
+sudo mkdir -p -m 755 /etc/apt/keyrings
+sudo rm -f /etc/apt/keyrings/kubernetes-apt-keyring.gpg
 
-sudo echo "deb [signed-by=/etc/apt/keyrings/kubernetes-apt-keyring.gpg] https://pkgs.k8s.io/core:/stable:/$KUBERNETES_VERSION/deb/ /" |
-    tee /etc/apt/sources.list.d/kubernetes.list
+curl -fsSL https://pkgs.k8s.io/core:/stable:/v${K8S_VERSION}/deb/Release.key | \
+  sudo gpg --dearmor -o /etc/apt/keyrings/kubernetes-apt-keyring.gpg
 
-sudo echo "deb [signed-by=/etc/apt/keyrings/cri-o-apt-keyring.gpg] https://download.opensuse.org/repositories/isv:/cri-o:/stable:/$CRIO_VERSION/deb/ /" |
-    tee /etc/apt/sources.list.d/cri-o.list
+echo "deb [signed-by=/etc/apt/keyrings/kubernetes-apt-keyring.gpg] \
+https://pkgs.k8s.io/core:/stable:/v${K8S_VERSION}/deb/ /" | \
+  sudo tee /etc/apt/sources.list.d/kubernetes.list
 
-
-sudo apt-get update
-
-sudo apt-get install -y cri-o cri-o-runc cri-tools
-
-sudo systemctl daemon-reload
-sudo systemctl enable crio
-sudo systemctl start crio
-
-echo "CRI runtime installed susccessfully"
-
-# Install kubelet, kubectl and Kubeadm
-
-sudo apt-get update -y
-sudo apt-get install -y apt-transport-https ca-certificates curl gpg
-
-curl -fsSL https://pkgs.k8s.io/core:/stable:/v1.30/deb/Release.key | sudo gpg --dearmor -o /etc/apt/keyrings/kubernetes-apt-keyring.gpg
-echo 'deb [signed-by=/etc/apt/keyrings/kubernetes-apt-keyring.gpg] https://pkgs.k8s.io/core:/stable:/v1.30/deb/ /' | sudo tee /etc/apt/sources.list.d/kubernetes.list
-
-sudo apt-get update -y
 sudo apt-get update
 sudo apt-get install -y kubelet kubeadm kubectl
 sudo apt-mark hold kubelet kubeadm kubectl
 
-sudo apt-get install -y jq
-
-local_ip="$(ip --json addr show eth0 | jq -r '.[0].addr_info[] | select(.family == "inet") | .local')"
-cat > /etc/default/kubelet << EOF
-KUBELET_EXTRA_ARGS=--node-ip=$local_ip
+echo "[Step 6] Configure kubelet to use containerd"
+cat <<EOF | sudo tee /etc/default/kubelet
+KUBELET_EXTRA_ARGS="--container-runtime-endpoint=unix:///run/containerd/containerd.sock --cgroup-driver=systemd"
 EOF
+
+sudo systemctl enable --now kubelet
+
+echo "[Bootstrap Complete] Node is ready for kubeadm init (control-plane) or kubeadm join (workers)."
 
 ```
 ```
