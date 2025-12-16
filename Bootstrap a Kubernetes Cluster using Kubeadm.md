@@ -237,7 +237,7 @@ bash
 
 Start kubeadm only on **master**
 ```
-kubeadm init --ignore-preflight-errors=all
+sudo kubeadm init --pod-network-cidr=192.168.0.0/16 --cri-socket=unix:///run/containerd/containerd.sock
 ```
 If the it runs successfully, it will provide a join command which can be used to join the master. Make a note of the highlighted part.
 Run the following commands to configure kubectl on master.
@@ -271,9 +271,8 @@ kubectl get nodes
 Go to **master** node and 
 Apply weave CNI (Container Network Interface) as shown below:
 ```
-kubectl apply -f https://github.com/weaveworks/weave/releases/download/v2.8.1/weave-daemonset-k8s.yaml
+kubectl apply -f https://docs.projectcalico.org/manifests/calico.yaml
 ```
-(reference link1:- https://www.weave.works/docs/net/latest/kubernetes/kube-addon/)
 
 View nodes to see that they are ready.
 ```
