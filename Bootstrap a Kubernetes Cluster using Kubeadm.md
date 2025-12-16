@@ -246,6 +246,13 @@ mkdir -p $HOME/.kube
 cp -i /etc/kubernetes/admin.conf $HOME/.kube/config 
 chown $(id -u):$(id -g) $HOME/.kube/config
 ```
+`This step needs to be executed if the Nodes are not in an available state or you are facing issues with the deployment of the pods.`
+Go to **master** node and 
+Apply weave CNI (Container Network Interface) as shown below:
+
+```
+kubectl apply -f https://docs.projectcalico.org/manifests/calico.yaml
+```
  
 ### Task 4: Joining a Cluster
 
@@ -266,23 +273,6 @@ View node information on the **master**
 kubectl get nodes
 ```
 
-### Task 5: Deploy Container Networking Interface.
-`This step needs to be executed if the Nodes are not in an available state or you are facing issues with the deployment of the pods.`
-Go to **master** node and 
-Apply weave CNI (Container Network Interface) as shown below:
-```
-kubectl apply -f https://docs.projectcalico.org/manifests/calico.yaml
-```
-
-View nodes to see that they are ready.
-```
-kubectl get nodes
-```
-
-View all Pods including system Pods and see that dns and weave are running.
-```
-kubectl get pod -n kube-system
-```
 
 ### Task 6: Create Pods
 To check the API version of any resource
