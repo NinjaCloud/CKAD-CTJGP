@@ -37,7 +37,10 @@ metadata:
   name: my-service-account-token
   annotations:
      kubernetes.io/service-account.name: sa1 # Link to your ServiceAccount
-type: kubernetes.io/service-account-token
+     type: kubernetes.io/service-account-token
+```
+```
+kubectl apply -f secretSA.yaml
 ```
 
 #### Create a new Role and RoleBinding 
