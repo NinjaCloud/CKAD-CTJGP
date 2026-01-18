@@ -30,8 +30,7 @@ kubectl -n ns1 run pod2 --image nginx --port 80
 kubectl -n ns1 expose pod pod2 --name pod2-svc --port 80 --type NodePort
 ```
 
-```
-![image](https://github.com/user-attachments/assets/a950f00d-57aa-4542-b9f5-6c257967435d)
+
 
 ```
 kubectl get quota -n ns1
