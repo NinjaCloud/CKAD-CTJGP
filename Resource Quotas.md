@@ -32,12 +32,7 @@ kubectl -n ns1 run pod2 --image nginx --port 80
 ```
 kubectl -n ns1 expose pod pod2 --name pod2-svc --port 80 --type NodePort
 ```
-Imperative 
-```
-kubectl -n ns1 create quota rs-quota1 --hard=pods=3,services=1
-```
-```
-kubectl describe ns ns1
+
 ```
 ![image](https://github.com/user-attachments/assets/a950f00d-57aa-4542-b9f5-6c257967435d)
 
