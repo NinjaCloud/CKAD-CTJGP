@@ -11,10 +11,7 @@ kubectl create namespace ns1
 ```
 kubectl get ns
 ```
-```
-kubectl describe ns ns1
-```
-![image](https://github.com/user-attachments/assets/1b803628-ebdf-4ec0-afe1-b8134c97c005)
+
 
 
 ### Task 2: Creating Resource Quota and Constraining Object Creation
